@@ -4,6 +4,7 @@ import { authService } from './services/auth';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import AuthModal from './components/auth/AuthModal';
+import LoadingFallback from './components/LoadingFallback';
 import { User } from './types';
 
 function App() {
@@ -11,12 +12,14 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'phone' | 'forgot'>('login');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthState();
     
     // Listen for auth state changes
     const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', event, session);
       if (event === 'SIGNED_IN' && session?.user) {
         const userData: User = {
           id: session.user.id,
@@ -25,7 +28,11 @@ function App() {
           balance: session.user.user_metadata?.balance || 10000,
           joinedAt: new Date(session.user.created_at),
           totalBets: session.user.user_metadata?.total_bets || 0,
-          winRate: session.user.user_metadata?.win_rate || 0
+          winRate: session.user.user_metadata?.win_rate || 0,
+          kycStatus: session.user.user_metadata?.kyc_status || 'pending',
+          bankAccounts: [],
+          riskProfile: 'moderate',
+          tradingExperience: 'beginner'
         };
         setUser(userData);
         setShowAuthModal(false);
@@ -39,9 +46,14 @@ function App() {
 
   const checkAuthState = async () => {
     try {
-      const { user: authUser } = await authService.getCurrentUser();
+      console.log('Checking auth state...');
+      const { user: authUser, error: authError } = await authService.getCurrentUser();
       
-      if (authUser) {
+      if (authError) {
+        console.error('Auth error:', authError);
+        setError(authError);
+      } else if (authUser) {
+        console.log('User found:', authUser);
         const userData: User = {
           id: authUser.id,
           email: authUser.email || '',
@@ -49,12 +61,17 @@ function App() {
           balance: authUser.user_metadata?.balance || 10000,
           joinedAt: new Date(authUser.created_at),
           totalBets: authUser.user_metadata?.total_bets || 0,
-          winRate: authUser.user_metadata?.win_rate || 0
+          winRate: authUser.user_metadata?.win_rate || 0,
+          kycStatus: authUser.user_metadata?.kyc_status || 'pending',
+          bankAccounts: [],
+          riskProfile: 'moderate',
+          tradingExperience: 'beginner'
         };
         setUser(userData);
       }
     } catch (error) {
       console.error('Error checking auth state:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -75,9 +92,32 @@ function App() {
   };
 
   if (loading) {
+    return <LoadingFallback />;
+  }
+
+  if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full border border-gray-700">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">
+            Configuration Error
+          </h1>
+          <p className="text-gray-300 mb-4">
+            There's an issue with the application configuration. Please check the console for details.
+          </p>
+          <details className="text-sm text-gray-400 mb-4">
+            <summary className="cursor-pointer mb-2">Error Details</summary>
+            <pre className="bg-gray-900 p-3 rounded text-xs overflow-auto">
+              {error}
+            </pre>
+          </details>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
