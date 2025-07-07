@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import AuthModal from './components/auth/AuthModal';
 import LoadingFallback from './components/LoadingFallback';
 import { User } from './types';
+import { supabase } from './services/auth';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -15,13 +16,10 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAuthState();
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, session);
-      if (event === 'SIGNED_IN' && session?.user) {
-        const userData: User = {
+    // Get current session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
           id: session.user.id,
           email: session.user.email || '',
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
@@ -33,49 +31,34 @@ function App() {
           bankAccounts: [],
           riskProfile: 'moderate',
           tradingExperience: 'beginner'
-        };
-        setUser(userData);
-        setShowAuthModal(false);
-      } else if (event === 'SIGNED_OUT') {
+        });
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          balance: session.user.user_metadata?.balance || 10000,
+          joinedAt: new Date(session.user.created_at),
+          totalBets: session.user.user_metadata?.total_bets || 0,
+          winRate: session.user.user_metadata?.win_rate || 0,
+          kycStatus: session.user.user_metadata?.kyc_status || 'pending',
+          bankAccounts: [],
+          riskProfile: 'moderate',
+          tradingExperience: 'beginner'
+        });
+      } else {
         setUser(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const checkAuthState = async () => {
-    try {
-      console.log('Checking auth state...');
-      const { user: authUser, error: authError } = await authService.getCurrentUser();
-      
-      if (authError) {
-        console.error('Auth error:', authError);
-        setError(authError);
-      } else if (authUser) {
-        console.log('User found:', authUser);
-        const userData: User = {
-          id: authUser.id,
-          email: authUser.email || '',
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-          balance: authUser.user_metadata?.balance || 10000,
-          joinedAt: new Date(authUser.created_at),
-          totalBets: authUser.user_metadata?.total_bets || 0,
-          winRate: authUser.user_metadata?.win_rate || 0,
-          kycStatus: authUser.user_metadata?.kyc_status || 'pending',
-          bankAccounts: [],
-          riskProfile: 'moderate',
-          tradingExperience: 'beginner'
-        };
-        setUser(userData);
-      }
-    } catch (error) {
-      console.error('Error checking auth state:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
