@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Phone, Github, Chrome, Eye, EyeOff } from 'lucide-react';
-import { authService } from '../../services/auth';
+import { authService } from '../../services/authService';
 import toast from 'react-hot-toast';
 
 interface AuthModalProps {
@@ -13,6 +13,7 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitchMode }) => {
   const [formData, setFormData] = useState({
     email: '',
+    username: '',
     password: '',
     confirmPassword: '',
     name: '',
@@ -42,19 +43,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
         }
         
         const { user, error } = await authService.signUp(
+          formData.username,
           formData.email,
-          formData.password,
-          formData.name
+          formData.password
         );
         
         if (error) {
           toast.error(error);
         } else {
-          toast.success('Account created! Please check your email for verification.');
+          toast.success('Account created successfully!');
           onSuccess();
         }
       } else if (mode === 'login') {
-        const { user, error } = await authService.signIn(formData.email, formData.password);
+        const { user, error } = await authService.signIn(formData.username, formData.password);
         
         if (error) {
           toast.error(error);
@@ -63,14 +64,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
           onSuccess();
         }
       } else if (mode === 'forgot') {
-        const { error } = await authService.resetPassword(formData.email);
-        
-        if (error) {
-          toast.error(error);
-        } else {
-          toast.success('Password reset email sent!');
-          onSwitchMode('login');
-        }
+        toast.error('Password reset not implemented yet');
+        onSwitchMode('login');
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred');
@@ -84,25 +79,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
     setLoading(true);
 
     try {
-      if (!otpSent) {
-        const { error } = await authService.sendOTP(formData.phone);
-        
-        if (error) {
-          toast.error(error);
-        } else {
-          setOtpSent(true);
-          toast.success('OTP sent to your phone!');
-        }
-      } else {
-        const { user, error } = await authService.verifyOTP(formData.phone, formData.otp);
-        
-        if (error) {
-          toast.error(error);
-        } else {
-          toast.success('Phone verified successfully!');
-          onSuccess();
-        }
-      }
+      toast.error('Phone authentication not implemented yet');
     } catch (error: any) {
       toast.error(error.message || 'An error occurred');
     } finally {
@@ -114,13 +91,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
     setLoading(true);
     
     try {
-      const { error } = provider === 'google' 
-        ? await authService.signInWithGoogle()
-        : await authService.signInWithGitHub();
-      
-      if (error) {
-        toast.error(error);
-      }
+      toast.error(`${provider} authentication not implemented yet`);
     } catch (error: any) {
       toast.error(error.message || 'An error occurred');
     } finally {
@@ -200,42 +171,83 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
         ) : (
           <form onSubmit={handleEmailAuth} className="space-y-4">
             {mode === 'register' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Username
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter username"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter email"
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {mode === 'login' && (
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Full Name
+                  Username
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="username"
+                    value={formData.username}
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter your name"
+                    placeholder="Enter username"
                     required
                   />
                 </div>
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="Enter your email"
-                  required
-                />
+            {mode === 'forgot' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Enter email"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {mode !== 'forgot' && (
               <div>
@@ -250,7 +262,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
                     value={formData.password}
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-12 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter your password"
+                    placeholder="Enter password"
                     required
                   />
                   <button
@@ -277,7 +289,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Confirm your password"
+                    placeholder="Confirm password"
                     required
                   />
                 </div>
@@ -289,94 +301,97 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose, onSuccess, onSwitc
               disabled={loading}
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white font-medium rounded-lg transition-colors"
             >
-              {loading ? 'Please wait...' : 
-               mode === 'register' ? 'Create Account' :
-               mode === 'forgot' ? 'Send Reset Email' : 'Sign In'}
+              {loading ? 'Please wait...' : mode === 'register' ? 'Create Account' : mode === 'forgot' ? 'Send Reset Email' : 'Sign In'}
             </button>
           </form>
         )}
 
-        {mode !== 'forgot' && mode !== 'phone' && (
-          <>
-            <div className="my-6 flex items-center">
-              <div className="flex-1 border-t border-gray-600"></div>
-              <span className="px-4 text-gray-400 text-sm">or continue with</span>
-              <div className="flex-1 border-t border-gray-600"></div>
+        {/* Social Auth Buttons - Disabled for now */}
+        {mode === 'login' && (
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-800 text-gray-400">Or continue with</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleSocialAuth('google')}
-                disabled={loading}
-                className="flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
+                disabled={true}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-sm font-medium text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Chrome className="h-5 w-5 mr-2" />
-                Google
+                <Chrome className="h-5 w-5" />
+                <span className="ml-2">Google</span>
               </button>
+
               <button
                 onClick={() => handleSocialAuth('github')}
-                disabled={loading}
-                className="flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
+                disabled={true}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-sm font-medium text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Github className="h-5 w-5 mr-2" />
-                GitHub
+                <Github className="h-5 w-5" />
+                <span className="ml-2">GitHub</span>
               </button>
             </div>
-          </>
+          </div>
         )}
 
-        <div className="mt-6 text-center space-y-2">
+        {/* Mode Switcher */}
+        <div className="mt-6 text-center">
           {mode === 'login' && (
-            <>
-              <p className="text-gray-400">
-                Don't have an account?{' '}
-                <button
-                  onClick={() => onSwitchMode('register')}
-                  className="text-emerald-400 hover:text-emerald-300 font-medium"
-                >
-                  Sign up
-                </button>
-              </p>
-              <p className="text-gray-400">
-                <button
-                  onClick={() => onSwitchMode('forgot')}
-                  className="text-emerald-400 hover:text-emerald-300 font-medium"
-                >
-                  Forgot password?
-                </button>
-              </p>
-              <p className="text-gray-400">
+            <div className="space-y-2">
+              <button
+                onClick={() => onSwitchMode('register')}
+                className="text-emerald-400 hover:text-emerald-300 text-sm"
+              >
+                Don't have an account? Sign up
+              </button>
+              <div className="space-x-4">
                 <button
                   onClick={() => onSwitchMode('phone')}
-                  className="text-emerald-400 hover:text-emerald-300 font-medium"
+                  className="text-emerald-400 hover:text-emerald-300 text-sm"
                 >
-                  Sign in with phone
+                  Phone Login
                 </button>
-              </p>
-            </>
+                <button
+                  onClick={() => onSwitchMode('forgot')}
+                  className="text-emerald-400 hover:text-emerald-300 text-sm"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            </div>
           )}
-          
+
           {mode === 'register' && (
-            <p className="text-gray-400">
-              Already have an account?{' '}
-              <button
-                onClick={() => onSwitchMode('login')}
-                className="text-emerald-400 hover:text-emerald-300 font-medium"
-              >
-                Sign in
-              </button>
-            </p>
+            <button
+              onClick={() => onSwitchMode('login')}
+              className="text-emerald-400 hover:text-emerald-300 text-sm"
+            >
+              Already have an account? Sign in
+            </button>
           )}
-          
-          {(mode === 'forgot' || mode === 'phone') && (
-            <p className="text-gray-400">
-              <button
-                onClick={() => onSwitchMode('login')}
-                className="text-emerald-400 hover:text-emerald-300 font-medium"
-              >
-                Back to sign in
-              </button>
-            </p>
+
+          {mode === 'phone' && (
+            <button
+              onClick={() => onSwitchMode('login')}
+              className="text-emerald-400 hover:text-emerald-300 text-sm"
+            >
+              Back to email login
+            </button>
+          )}
+
+          {mode === 'forgot' && (
+            <button
+              onClick={() => onSwitchMode('login')}
+              className="text-emerald-400 hover:text-emerald-300 text-sm"
+            >
+              Back to sign in
+            </button>
           )}
         </div>
       </div>

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { authService } from './services/auth';
+import { authService } from './services/authService';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import AuthModal from './components/auth/AuthModal';
 import LoadingFallback from './components/LoadingFallback';
 import { User } from './types';
-import { supabase } from './services/auth';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -16,48 +15,35 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get current session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-          balance: session.user.user_metadata?.balance || 10000,
-          joinedAt: new Date(session.user.created_at),
-          totalBets: session.user.user_metadata?.total_bets || 0,
-          winRate: session.user.user_metadata?.win_rate || 0,
-          kycStatus: session.user.user_metadata?.kyc_status || 'pending',
-          bankAccounts: [],
-          riskProfile: 'moderate',
-          tradingExperience: 'beginner'
-        });
+    // Check if user is authenticated on mount
+    const checkAuth = async () => {
+      try {
+        if (authService.isAuthenticated()) {
+          const authUser = await authService.getCurrentUser();
+          if (authUser) {
+            setUser({
+              id: authUser.id.toString(),
+              email: authUser.email,
+              name: authUser.username,
+              balance: 10000, // Default balance
+              joinedAt: new Date(authUser.created_at),
+              totalBets: 0,
+              winRate: 0,
+              kycStatus: authUser.kyc_status as 'pending' | 'verified' | 'rejected',
+              bankAccounts: [],
+              riskProfile: 'moderate',
+              tradingExperience: 'beginner'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-          balance: session.user.user_metadata?.balance || 10000,
-          joinedAt: new Date(session.user.created_at),
-          totalBets: session.user.user_metadata?.total_bets || 0,
-          winRate: session.user.user_metadata?.win_rate || 0,
-          kycStatus: session.user.user_metadata?.kyc_status || 'pending',
-          bankAccounts: [],
-          riskProfile: 'moderate',
-          tradingExperience: 'beginner'
-        });
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, []);
 
   const handleLogout = async () => {
