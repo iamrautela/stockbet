@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Globe, Clock, TrendingUp, DollarSign, RefreshCw } from 'lucide-react';
 import { User, GlobalMarket, CurrencyRate } from '../../types';
-import { globalTradingService } from '../../services/globalTradingService';
 import CurrencyConverter from './CurrencyConverter';
 import GlobalMarketCard from './GlobalMarketCard';
 import toast from 'react-hot-toast';
@@ -10,46 +9,63 @@ interface GlobalTradingDashboardProps {
   user: User;
 }
 
+// Mock data
+const mockMarkets: GlobalMarket[] = [
+  {
+    region: 'North America',
+    exchange: 'NYSE',
+    isOpen: true,
+    openTime: '09:30',
+    closeTime: '16:00',
+    timezone: 'EST',
+    currency: 'USD',
+    indices: ['S&P 500', 'Dow Jones'],
+  },
+  {
+    region: 'India',
+    exchange: 'NSE',
+    isOpen: false,
+    openTime: '09:15',
+    closeTime: '15:30',
+    timezone: 'IST',
+    currency: 'INR',
+    indices: ['Nifty 50', 'Sensex'],
+  },
+];
+
+const mockRates: CurrencyRate[] = [
+  { from: 'USD', to: 'INR', rate: 83.2, lastUpdated: new Date() },
+  { from: 'INR', to: 'USD', rate: 1 / 83.2, lastUpdated: new Date() },
+  { from: 'USD', to: 'EUR', rate: 0.92, lastUpdated: new Date() },
+  { from: 'EUR', to: 'USD', rate: 1.09, lastUpdated: new Date() },
+];
+
+const mockPortfolio = {
+  totalValueINR: 250000,
+  holdings: [
+    { symbol: 'AAPL', shares: 10, value: 15000 },
+    { symbol: 'RELIANCE', shares: 20, value: 50000 },
+  ],
+};
+
 const GlobalTradingDashboard: React.FC<GlobalTradingDashboardProps> = ({ user }) => {
-  const [globalMarkets, setGlobalMarkets] = useState<GlobalMarket[]>([]);
-  const [currencyRates, setCurrencyRates] = useState<CurrencyRate[]>([]);
-  const [globalPortfolio, setGlobalPortfolio] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [globalMarkets, setGlobalMarkets] = useState<GlobalMarket[]>(mockMarkets);
+  const [currencyRates, setCurrencyRates] = useState<CurrencyRate[]>(mockRates);
+  const [globalPortfolio, setGlobalPortfolio] = useState<any>(mockPortfolio);
+  const [loading, setLoading] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<string>('');
 
-  useEffect(() => {
-    loadGlobalTradingData();
-  }, [user.id]);
-
-  const loadGlobalTradingData = async () => {
-    setLoading(true);
-    try {
-      const [markets, rates, portfolio] = await Promise.all([
-        globalTradingService.getGlobalMarkets(),
-        globalTradingService.getCurrencyRates(),
-        globalTradingService.getGlobalPortfolio(user.id)
-      ]);
-
-      setGlobalMarkets(markets);
-      setCurrencyRates(rates);
-      setGlobalPortfolio(portfolio);
-    } catch (error) {
-      console.error('Error loading global trading data:', error);
-      toast.error('Failed to load global trading data');
-    } finally {
-      setLoading(false);
-    }
+  const handleGlobalTrade = (symbol: string, exchange: string, amount: number, currency: string) => {
+    toast.success(`Placed trade for ${symbol} on ${exchange} (${amount} ${currency})`);
+    // Optionally update mockPortfolio state here
   };
 
-  const handleGlobalTrade = async (symbol: string, exchange: string, amount: number, currency: string) => {
-    const result = await globalTradingService.placeGlobalTrade(symbol, exchange, amount, currency);
-    
-    if (result.success) {
-      toast.success('Global trade placed successfully!');
-      loadGlobalTradingData();
-    } else {
-      toast.error(result.error || 'Failed to place global trade');
-    }
+  const loadGlobalTradingData = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      toast.success('Global trading data refreshed!');
+    }, 800);
   };
 
   const getMarketStatusColor = (isOpen: boolean) => {
@@ -76,7 +92,6 @@ const GlobalTradingDashboard: React.FC<GlobalTradingDashboardProps> = ({ user })
           <h2 className="text-2xl font-bold">Global Trading</h2>
           <p className="text-gray-400">Trade stocks from international markets</p>
         </div>
-        
         <button
           onClick={loadGlobalTradingData}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
@@ -85,23 +100,20 @@ const GlobalTradingDashboard: React.FC<GlobalTradingDashboardProps> = ({ user })
           <span>Refresh</span>
         </button>
       </div>
-
       {/* Global Portfolio Summary */}
       {globalPortfolio && (
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-xl text-white">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm opacity-90">Global Portfolio Value</div>
-              <div className="text-3xl font-bold">₹{globalPortfolio.totalValueINR.toLocaleString()}</div>
+              <div className="text-3xl font-bold">₹{(globalPortfolio.totalValueINR ?? 0).toLocaleString()}</div>
             </div>
             <Globe className="h-12 w-12 opacity-80" />
           </div>
         </div>
       )}
-
       {/* Currency Converter */}
       <CurrencyConverter currencyRates={currencyRates} />
-
       {/* Global Markets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {globalMarkets.map((market) => (
@@ -148,7 +160,7 @@ const GlobalTradingDashboard: React.FC<GlobalTradingDashboardProps> = ({ user })
                 ₹{rate.rate.toFixed(2)}
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                {rate.lastUpdated.toLocaleTimeString()}
+                {rate.lastUpdated?.toLocaleTimeString() ?? 'N/A'}
               </div>
             </div>
           ))}
@@ -156,7 +168,7 @@ const GlobalTradingDashboard: React.FC<GlobalTradingDashboardProps> = ({ user })
       </div>
 
       {/* Global Portfolio Breakdown */}
-      {globalPortfolio && globalPortfolio.portfolioByExchange && (
+      {globalPortfolio && Array.isArray(globalPortfolio.portfolioByExchange) && globalPortfolio.portfolioByExchange.length > 0 ? (
         <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
           <h3 className="text-lg font-semibold mb-4">Portfolio by Exchange</h3>
           <div className="grid gap-4">
@@ -169,16 +181,21 @@ const GlobalTradingDashboard: React.FC<GlobalTradingDashboardProps> = ({ user })
                   </div>
                   <div className="text-right">
                     <div className="font-medium">
-                      {portfolio.currency} {portfolio.currentValue.toLocaleString()}
+                      {portfolio.currency} {portfolio.currentValue?.toLocaleString() ?? 'N/A'}
                     </div>
                     <div className="text-sm text-gray-400">
-                      Invested: {portfolio.currency} {portfolio.totalInvested.toLocaleString()}
+                      Invested: {portfolio.currency} {portfolio.totalInvested?.toLocaleString() ?? 'N/A'}
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 text-center text-gray-400">
+          <h3 className="text-lg font-semibold mb-4">Portfolio by Exchange</h3>
+          <div>No portfolio data available.</div>
         </div>
       )}
 

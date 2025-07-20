@@ -52,7 +52,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
 
   const formatAmount = (amount: number, type: string) => {
     const prefix = ['deposit', 'payout'].includes(type) ? '+' : '-';
-    return `${prefix}₹${amount.toLocaleString()}`;
+    return `${prefix}₹${(amount ?? 0).toLocaleString()}`;
   };
 
   if (transactions.length === 0) {
@@ -91,7 +91,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
                   {transaction.description}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {transaction.createdAt.toLocaleString()}
+                  {transaction.createdAt ? new Date(transaction.createdAt).toLocaleString() : 'N/A'}
                 </div>
               </div>
             </div>
