@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:8000';
+import { apiService, API_BASE_URL } from './api';
+
+export const API_BASE_URL = 'http://localhost:8000'; // or your actual API URL
 
 class ApiService {
   private getAuthHeaders(): HeadersInit {
@@ -67,4 +69,4 @@ class ApiService {
   }
 }
 
-export const apiService = new ApiService(); 
+export const apiService = new ApiService();
