@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 168 80% 50%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 40% 90%;
+
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 222 30% 16%;
+    --accent-foreground: 210 40% 96%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 30% 16%;
+    --input: 222 30% 14%;
+    --ring: 168 80% 50%;
+
+    --radius: 0.5rem;
+
+    /* Trading-specific tokens */
+    --gain: 142 76% 46%;
+    --gain-foreground: 142 76% 96%;
+    --loss: 0 84% 60%;
+    --loss-foreground: 0 84% 96%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 96%;
+    --info: 199 89% 48%;
+    --info-foreground: 199 89% 96%;
+
+    --chart-gain: 142 76% 46%;
+    --chart-loss: 0 84% 60%;
+    --chart-line: 168 80% 50%;
+    --chart-grid: 222 30% 14%;
+    --chart-volume: 199 89% 48%;
+
+    --terminal-glow: 168 80% 50%;
+    --terminal-surface: 222 47% 7%;
+
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 168 80% 50%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 30% 12%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 222 30% 14%;
+    --sidebar-ring: 168 80% 50%;
+
+    /* Font families */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .text-gain {
+    color: hsl(var(--gain));
+  }
+
+  .text-loss {
+    color: hsl(var(--loss));
+  }
+
+  .bg-gain {
+    background-color: hsl(var(--gain));
+  }
+
+  .bg-loss {
+    background-color: hsl(var(--loss));
+  }
+
+  .bg-gain\/10 {
+    background-color: hsl(var(--gain) / 0.1);
+  }
+
+  .bg-loss\/10 {
+    background-color: hsl(var(--loss) / 0.1);
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--terminal-glow) / 0.15), 0 0 60px hsl(var(--terminal-glow) / 0.05);
+  }
+
+  .glow-gain {
+    box-shadow: 0 0 20px hsl(var(--gain) / 0.2);
+  }
+
+  .glow-loss {
+    box-shadow: 0 0 20px hsl(var(--loss) / 0.2);
+  }
+
+  .terminal-border {
+    border-color: hsl(var(--border));
+    border-width: 1px;
+  }
+
+  .glass {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(12px);
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Number ticker animation */
+@keyframes ticker-up {
+  0% { color: hsl(var(--gain)); transform: translateY(2px); }
+  100% { color: inherit; transform: translateY(0); }
+}
+
+@keyframes ticker-down {
+  0% { color: hsl(var(--loss)); transform: translateY(-2px); }
+  100% { color: inherit; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

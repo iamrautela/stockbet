@@ -1,0 +1,7 @@
+project_id = "ipldonicajiwvlbzgmqx"
+
+[functions.market-data]
+verify_jwt = false
+
+[functions.settle-bets]
+verify_jwt = false
