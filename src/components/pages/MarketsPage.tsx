@@ -67,7 +67,7 @@ const StockRow = ({ stock, index }: { stock: LiveStock; index: number }) => {
         </div>
       </div>
       <div className="col-span-2 text-right font-mono text-sm font-semibold text-foreground">
-        ${stock.price.toLocaleString()}
+        {stock.market === 'IN' ? '₹' : stock.market === 'HK' ? 'HK$' : '$'}{stock.price.toLocaleString('en-IN')}
       </div>
       <div className="col-span-2 text-right">
         <span className={`font-mono text-sm font-medium ${isPositive ? 'text-gain' : 'text-loss'}`}>

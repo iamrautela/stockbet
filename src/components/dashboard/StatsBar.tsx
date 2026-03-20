@@ -9,10 +9,12 @@ const StatsBar = () => {
   const inBets = wallet ? Number(wallet.in_bets) : 0;
   const available = balance;
 
+  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+
   const stats = [
-    { label: 'Portfolio Value', value: `$${(balance + inBets).toLocaleString()}`, icon: Activity, accent: 'primary' as const },
-    { label: 'Available', value: `$${available.toLocaleString()}`, icon: Target, accent: 'primary' as const },
-    { label: 'In Bets', value: `$${inBets.toLocaleString()}`, icon: TrendingUp, accent: 'gain' as const },
+    { label: 'Portfolio Value', value: fmt(balance + inBets), icon: Activity, accent: 'primary' as const },
+    { label: 'Available', value: fmt(available), icon: Target, accent: 'primary' as const },
+    { label: 'In Bets', value: fmt(inBets), icon: TrendingUp, accent: 'gain' as const },
   ];
 
   const accentClasses = {

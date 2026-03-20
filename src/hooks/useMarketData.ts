@@ -5,8 +5,10 @@ export function useMarketData(market: string) {
   return useQuery<LiveStock[]>({
     queryKey: ['market-data', market],
     queryFn: () => fetchMarketData(market),
-    refetchInterval: 30000, // refresh every 30s
-    staleTime: 15000,
-    retry: 2,
+    refetchInterval: 15000,
+    staleTime: 10000,
+    retry: 1,
+    // Always return empty array on error so UI never shows broken state
+    placeholderData: [],
   });
 }

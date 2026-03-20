@@ -60,7 +60,7 @@ const TickerRow = ({ stock, index, onClick }: { stock: LiveStock; index: number;
       </div>
       <div className="text-right">
         <p className="text-sm font-mono font-semibold text-foreground">
-          ${stock.price.toLocaleString()}
+          {stock.market === 'IN' ? '₹' : stock.market === 'HK' ? 'HK$' : '$'}{stock.price.toLocaleString('en-IN')}
         </p>
         <p className={`text-xs font-mono font-medium ${isPositive ? 'text-gain' : 'text-loss'}`}>
           {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%

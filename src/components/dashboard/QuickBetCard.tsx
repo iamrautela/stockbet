@@ -16,7 +16,8 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
   const { data: wallet } = useWallet();
 
   const stock = selectedStock || { symbol: 'AAPL', name: 'Apple Inc.', price: 198.45, market: 'US' };
-  const balance = wallet ? Number(wallet.balance) : 0;
+  // Use mock balance of ₹10,000 when wallet not loaded yet
+  const balance = wallet ? Number(wallet.balance) : 10000;
 
   const handlePlaceBet = () => {
     const stakeNum = Number(stake);
@@ -37,7 +38,7 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="px-4 py-3 border-b border-border">
         <h3 className="text-sm font-semibold text-foreground">Quick Bet</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">{stock.symbol} — ${stock.price.toLocaleString()}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{stock.symbol} — ₹{stock.price.toLocaleString('en-IN')}</p>
       </div>
 
       <div className="p-4 space-y-4">
@@ -62,10 +63,10 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
 
         <div>
           <label className="text-xs text-muted-foreground mb-1.5 block">
-            Stake Amount <span className="text-primary">(Available: ${balance.toLocaleString()})</span>
+            Stake Amount <span className="text-primary">(Available: ₹{balance.toLocaleString('en-IN')})</span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
             <input
               type="number"
               value={stake}
@@ -74,7 +75,7 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
             />
           </div>
           <div className="flex gap-2 mt-2">
-            {['50', '100', '250', '500'].map((v) => (
+            {['500', '1000', '2500', '5000'].map((v) => (
               <button
                 key={v}
                 onClick={() => setStake(v)}
@@ -82,7 +83,7 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
                   stake === v ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground hover:text-foreground'
                 }`}
               >
-                ${v}
+                ₹{v}
               </button>
             ))}
           </div>
@@ -108,11 +109,11 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
         <div className="bg-muted rounded-lg p-3 space-y-1.5">
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Expected Payout</span>
-            <span className="font-mono text-foreground">${(Number(stake) * 1.85).toFixed(2)}</span>
+            <span className="font-mono text-foreground">₹{(Number(stake) * 1.85).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Max Risk</span>
-            <span className="font-mono text-loss">${stake}</span>
+            <span className="font-mono text-loss">₹{stake}</span>
           </div>
         </div>
 
@@ -125,7 +126,7 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
           }`}
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          {isPending ? 'Placing...' : `Place ${betType.toUpperCase()} Bet — $${stake}`}
+          {isPending ? 'Placing...' : `Place ${betType.toUpperCase()} Bet — ₹${stake}`}
         </motion.button>
 
         <div className="flex items-start gap-2 text-xs text-warning/80">

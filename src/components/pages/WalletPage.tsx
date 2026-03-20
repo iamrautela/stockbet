@@ -64,7 +64,7 @@ const WalletPage = () => {
               <span className="text-xs text-muted-foreground">{s.label}</span>
             </div>
             <p className="font-mono text-xl font-bold text-foreground">
-              {walletLoading ? '...' : `$${s.value.toLocaleString()}`}
+              {walletLoading ? '...' : `₹${s.value.toLocaleString('en-IN')}`}
             </p>
           </motion.div>
         ))}
@@ -110,7 +110,7 @@ const WalletPage = () => {
                   </div>
                   <div className="text-right">
                     <p className={`font-mono text-sm font-semibold ${isNeg ? 'text-loss' : 'text-gain'}`}>
-                      {isNeg ? `-$${Math.abs(amount)}` : `+$${amount}`}
+                      {isNeg ? `-₹${Math.abs(amount).toLocaleString('en-IN')}` : `+₹${amount.toLocaleString('en-IN')}`}
                     </p>
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge[tx.status] || ''}`}>
                       {tx.status}

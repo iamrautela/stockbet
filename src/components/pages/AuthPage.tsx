@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  TrendingUp, Mail, Phone, AlertTriangle,
+  TrendingUp, Mail, AlertTriangle,
   ArrowLeft, CheckCircle, RefreshCw, Loader2,
 } from 'lucide-react';
 import { useOTPAuth } from '@/hooks/useOTPAuth';
 import { OTPInput } from '@/components/auth/OTPInput';
-import { isEmail, isPhone } from '@/lib/otpStore';
 
 const slide = {
   initial: { opacity: 0, x: 24 },
@@ -43,12 +42,6 @@ const AuthPage = () => {
     verifyOTP(otpDigits.join(''));
   };
 
-  const contactIcon = () => {
-    if (isEmail(contactInput)) return <Mail className="w-4 h-4 text-primary" />;
-    if (isPhone(contactInput)) return <Phone className="w-4 h-4 text-primary" />;
-    return <Mail className="w-4 h-4 text-muted-foreground" />;
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -65,12 +58,12 @@ const AuthPage = () => {
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <AnimatePresence mode="wait">
 
-            {/* ── STEP 1: Enter contact ─────────────────────────────── */}
+            {/* ── STEP 1: Enter email ─────────────────────────────── */}
             {step === 'contact' && (
               <motion.div key="contact" {...slide} className="p-6">
                 <h2 className="text-lg font-bold text-foreground mb-1">Get started</h2>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Enter your email or phone to receive a one-time code.
+                  Enter your email to receive a one-time sign-in code.
                 </p>
 
                 {error && <ErrorBanner message={error} />}
@@ -78,26 +71,23 @@ const AuthPage = () => {
                 <form onSubmit={handleSend} className="space-y-4">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1.5 block">
-                      Email or Phone Number
+                      Email Address
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2">
-                        {contactIcon()}
+                        <Mail className="w-4 h-4 text-muted-foreground" />
                       </span>
                       <input
                         ref={contactRef}
-                        type="text"
+                        type="email"
                         value={contactInput}
                         onChange={(e) => { setContactInput(e.target.value); setError(''); }}
-                        placeholder="you@example.com or +919876543210"
-                        autoComplete="off"
+                        placeholder="you@example.com"
+                        autoComplete="email"
                         spellCheck={false}
                         className="w-full bg-muted rounded-lg pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      Phone must be in E.164 format — e.g. <span className="text-foreground">+919876543210</span>
-                    </p>
                   </div>
 
                   <button
@@ -124,10 +114,10 @@ const AuthPage = () => {
                   onClick={goBack}
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-5 transition-colors"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Change {contactType}
+                  <ArrowLeft className="w-3.5 h-3.5" /> Change email
                 </button>
 
-                <h2 className="text-lg font-bold text-foreground mb-1">Check your {contactType}</h2>
+                <h2 className="text-lg font-bold text-foreground mb-1">Check your email</h2>
                 <p className="text-sm text-muted-foreground mb-1">
                   We sent a 6-digit code to
                 </p>
