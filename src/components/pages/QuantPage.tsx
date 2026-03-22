@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { fetchHistoricalCloses } from '@/lib/historical-prices';
 import { motion } from 'framer-motion';
 import {
   FlaskConical, Play, BarChart3, TrendingUp, Shield, Target,
@@ -33,18 +34,43 @@ interface BacktestResult {
   trades: number;
   avgWin: number;
   avgLoss: number;
+  dataSource: 'yahoo' | 'simulated';
+  barCount: number;
 }
 
 // ─── Backtest Engine ──────────────────────────────────────────────────────────
 
-function runBacktest(rules: Rule[], capital: number, symbol: string): BacktestResult {
-  const days = 252; // 1 trading year
-  // Generate synthetic price series
+function syntheticPrices(symbol: string, days: number): number[] {
   let price = symbol.includes('NS') ? 2500 : symbol.includes('HK') ? 380 : 200;
   const prices: number[] = [price];
   for (let i = 1; i < days; i++) {
     price *= 1 + (Math.random() - 0.49) * 0.025;
     prices.push(Math.round(price * 100) / 100);
+  }
+  return prices;
+}
+
+function runBacktest(
+  rules: Rule[],
+  capital: number,
+  symbol: string,
+  prices: number[],
+  dataSource: BacktestResult['dataSource']
+): BacktestResult {
+  const days = prices.length;
+  if (days < 25) {
+    return {
+      equity: [{ day: 0, value: capital }],
+      winRate: 0,
+      sharpe: 0,
+      maxDrawdown: 0,
+      totalReturn: 0,
+      trades: 0,
+      avgWin: 0,
+      avgLoss: 0,
+      dataSource,
+      barCount: days,
+    };
   }
 
   // Simple SMA helper
@@ -127,6 +153,8 @@ function runBacktest(rules: Rule[], capital: number, symbol: string): BacktestRe
     trades: totalTrades,
     avgWin: wins > 0 ? Math.round((totalWinPct / wins) * 10000) / 100 : 0,
     avgLoss: losses > 0 ? Math.round((totalLossPct / losses) * 10000) / 100 : 0,
+    dataSource,
+    barCount: days,
   };
 }
 
@@ -158,6 +186,7 @@ const QuantPage = () => {
   ]);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [running, setRunning] = useState(false);
+  const [dataNote, setDataNote] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'builder' | 'saved'>('builder');
 
@@ -176,9 +205,26 @@ const QuantPage = () => {
   const handleRun = useCallback(async () => {
     setRunning(true);
     setSaved(false);
-    // Simulate async delay for UX
-    await new Promise((r) => setTimeout(r, 800));
-    const res = runBacktest(rules, capital, symbol);
+    setDataNote(null);
+    setResult(null);
+
+    const series = await fetchHistoricalCloses(symbol, '1y');
+    let prices: number[];
+    let source: BacktestResult['dataSource'] = 'yahoo';
+
+    if (series?.closes?.length && series.closes.length >= 25) {
+      prices = series.closes;
+      setDataNote(`Live historical data: ${series.closes.length} daily bars (Yahoo Finance).`);
+    } else {
+      prices = syntheticPrices(symbol, 252);
+      source = 'simulated';
+      setDataNote(
+        'Could not load live history (start Vercel API + proxy, or check symbol). Using simulated prices for this run.'
+      );
+    }
+
+    await new Promise((r) => setTimeout(r, 100));
+    const res = runBacktest(rules, capital, symbol, prices, source);
     setResult(res);
     setRunning(false);
   }, [rules, capital, symbol]);
@@ -364,12 +410,25 @@ const QuantPage = () => {
             {running && (
               <div className="bg-card border border-border rounded-xl p-8 flex flex-col items-center justify-center min-h-[300px]">
                 <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
-                <p className="text-sm text-muted-foreground">Simulating {symbol} over 252 trading days...</p>
+                <p className="text-sm text-muted-foreground">
+                  Loading market history for {symbol}…
+                </p>
               </div>
             )}
 
             {result && !running && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                {dataNote && (
+                  <p
+                    className={`text-xs rounded-lg px-3 py-2 border ${
+                      result.dataSource === 'yahoo'
+                        ? 'bg-gain/10 text-gain border-gain/20'
+                        : 'bg-warning/10 text-warning border-warning/20'
+                    }`}
+                  >
+                    {dataNote}
+                  </p>
+                )}
                 {/* Metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
@@ -392,7 +451,9 @@ const QuantPage = () => {
                 <div className="bg-card border border-border rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-foreground">Equity Curve</h3>
-                    <span className="text-xs text-muted-foreground font-mono">{result.trades} trades · 252 days</span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {result.trades} trades · {result.barCount} days ({result.dataSource === 'yahoo' ? 'live history' : 'simulated'})
+                    </span>
                   </div>
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={result.equity} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
@@ -427,14 +488,22 @@ const QuantPage = () => {
                 <div className="bg-card border border-border rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-foreground mb-3">Trade Statistics</h3>
                   <div className="grid grid-cols-3 gap-3 text-center">
-                    {[
-                      { label: 'Total Trades', value: result.trades },
-                      { label: 'Avg Win', value: `+${result.avgWin}%`, className: 'text-gain' },
-                      { label: 'Avg Loss', value: `-${result.avgLoss}%`, className: 'text-loss' },
-                    ].map((s) => (
+                    {(
+                      [
+                        { label: 'Total Trades', value: String(result.trades) },
+                        { label: 'Avg Win', value: `+${result.avgWin}%`, className: 'text-gain' as const },
+                        { label: 'Avg Loss', value: `-${result.avgLoss}%`, className: 'text-loss' as const },
+                      ] as const
+                    ).map((s) => (
                       <div key={s.label} className="bg-muted rounded-lg p-2.5">
                         <p className="text-[10px] text-muted-foreground mb-1">{s.label}</p>
-                        <p className={`font-mono text-sm font-bold ${(s as any).className || 'text-foreground'}`}>{s.value}</p>
+                        <p
+                          className={`font-mono text-sm font-bold ${
+                            'className' in s ? s.className : 'text-foreground'
+                          }`}
+                        >
+                          {s.value}
+                        </p>
                       </div>
                     ))}
                   </div>

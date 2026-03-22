@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 import { useAuth } from './useAuth';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -16,6 +17,12 @@ export const useWallet = () => {
     if (!user) return;
 
     try {
+      if (backendApiEnabled()) {
+        const row = await apiFetch<Wallet>('/api/wallet');
+        setWallet(row as Wallet);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('wallets')
         .select('*')
@@ -33,6 +40,12 @@ export const useWallet = () => {
     if (!user) return;
 
     try {
+      if (backendApiEnabled()) {
+        const res = await apiFetch<{ transactions: Transaction[] }>('/api/transactions');
+        setTransactions(res.transactions || []);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('wallet_transactions')
         .select('*')

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -36,18 +37,24 @@ export const WithdrawModal = ({ open, onOpenChange, currentBalance, onSuccess }:
     setError('');
 
     try {
-      const { error: rpcError } = await supabase.rpc('withdraw_funds', {
-        p_amount: numAmount,
-      });
-
-      if (rpcError) throw rpcError;
+      if (backendApiEnabled()) {
+        await apiFetch('/api/wallet', {
+          method: 'POST',
+          json: { action: 'withdraw', amount: numAmount },
+        });
+      } else {
+        const { error: rpcError } = await supabase.rpc('withdraw_funds', {
+          p_amount: numAmount,
+        });
+        if (rpcError) throw rpcError;
+      }
 
       toast.success('Withdrawal request submitted');
       setAmount('');
       onSuccess();
       onOpenChange(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to withdraw funds');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to withdraw funds');
       toast.error('Withdrawal failed');
     } finally {
       setLoading(false);

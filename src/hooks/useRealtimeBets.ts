@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 import { useAuth } from './useAuth';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -14,6 +15,12 @@ export const useRealtimeBets = () => {
     if (!user) return;
 
     try {
+      if (backendApiEnabled()) {
+        const res = await apiFetch<{ bets: Bet[] }>('/api/bets?status=all');
+        setBets(res.bets || []);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('bets')
         .select('*')

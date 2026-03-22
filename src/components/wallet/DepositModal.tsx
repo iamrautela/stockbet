@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -32,18 +33,24 @@ export const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProp
     setError('');
 
     try {
-      const { error: rpcError } = await supabase.rpc('deposit_funds', {
-        p_amount: numAmount,
-      });
-
-      if (rpcError) throw rpcError;
+      if (backendApiEnabled()) {
+        await apiFetch('/api/wallet', {
+          method: 'POST',
+          json: { action: 'deposit', amount: numAmount },
+        });
+      } else {
+        const { error: rpcError } = await supabase.rpc('deposit_funds', {
+          p_amount: numAmount,
+        });
+        if (rpcError) throw rpcError;
+      }
 
       toast.success(`Successfully deposited ₹${numAmount.toLocaleString()}`);
       setAmount('');
       onSuccess();
       onOpenChange(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to deposit funds');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to deposit funds');
       toast.error('Deposit failed');
     } finally {
       setLoading(false);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -15,6 +16,12 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
+      if (backendApiEnabled()) {
+        const res = await apiFetch<{ notifications: Notification[] }>('/api/notifications');
+        setNotifications(res.notifications || []);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -33,6 +40,15 @@ export const useNotifications = () => {
 
   const markAsRead = async (id: string) => {
     try {
+      if (backendApiEnabled()) {
+        await apiFetch('/api/notifications', {
+          method: 'PATCH',
+          json: { id, read: true },
+        });
+        await fetchNotifications();
+        return;
+      }
+
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
@@ -49,6 +65,15 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
+      if (backendApiEnabled()) {
+        await apiFetch('/api/notifications', {
+          method: 'PATCH',
+          json: { markAllRead: true },
+        });
+        await fetchNotifications();
+        return;
+      }
+
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })

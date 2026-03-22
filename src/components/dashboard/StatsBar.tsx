@@ -3,18 +3,36 @@ import { TrendingUp, Activity, Target } from 'lucide-react';
 import { useWallet } from '@/hooks/useBetting';
 
 const StatsBar = () => {
-  const { data: wallet } = useWallet();
+  const { data: wallet, isLoading } = useWallet();
 
-  const balance = wallet ? Number(wallet.balance) : 10000;
-  const inBets = wallet ? Number(wallet.in_bets) : 0;
-  const available = balance;
+  const balance = wallet != null ? Number(wallet.balance) : null;
+  const inBets = wallet != null ? Number(wallet.in_bets) : null;
+  const available = balance ?? 0;
+  const inBetsVal = inBets ?? 0;
 
   const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
+  const portfolio = balance != null ? balance + inBetsVal : null;
+
   const stats = [
-    { label: 'Portfolio Value', value: fmt(balance + inBets), icon: Activity, accent: 'primary' as const },
-    { label: 'Available', value: fmt(available), icon: Target, accent: 'primary' as const },
-    { label: 'In Bets', value: fmt(inBets), icon: TrendingUp, accent: 'gain' as const },
+    {
+      label: 'Portfolio Value',
+      value: isLoading ? '…' : balance != null ? fmt(portfolio!) : fmt(0),
+      icon: Activity,
+      accent: 'primary' as const,
+    },
+    {
+      label: 'Available',
+      value: isLoading ? '…' : balance != null ? fmt(available) : fmt(0),
+      icon: Target,
+      accent: 'primary' as const,
+    },
+    {
+      label: 'In Bets',
+      value: isLoading ? '…' : balance != null ? fmt(inBetsVal) : fmt(0),
+      icon: TrendingUp,
+      accent: 'gain' as const,
+    },
   ];
 
   const accentClasses = {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'>;
@@ -33,6 +34,12 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     
     setIsLoading(true);
     try {
+      if (backendApiEnabled()) {
+        const res = await apiFetch<{ profile: Profile | null }>('/api/profile');
+        setProfile(res.profile ?? null);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -52,6 +59,16 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
 
     try {
+      if (backendApiEnabled()) {
+        const { display_name, avatar_url, preferred_market } = data;
+        const res = await apiFetch<{ profile: Profile }>('/api/profile', {
+          method: 'PATCH',
+          json: { display_name, avatar_url, preferred_market },
+        });
+        setProfile(res.profile);
+        return;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .upsert({

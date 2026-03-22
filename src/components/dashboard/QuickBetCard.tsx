@@ -16,8 +16,7 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
   const { data: wallet } = useWallet();
 
   const stock = selectedStock || { symbol: 'AAPL', name: 'Apple Inc.', price: 198.45, market: 'US' };
-  // Use mock balance of ₹10,000 when wallet not loaded yet
-  const balance = wallet ? Number(wallet.balance) : 10000;
+  const balance = wallet != null ? Number(wallet.balance) : 0;
 
   const handlePlaceBet = () => {
     const stakeNum = Number(stake);
@@ -63,7 +62,11 @@ const QuickBetCard = ({ selectedStock }: QuickBetCardProps) => {
 
         <div>
           <label className="text-xs text-muted-foreground mb-1.5 block">
-            Stake Amount <span className="text-primary">(Available: ₹{balance.toLocaleString('en-IN')})</span>
+            Stake Amount{' '}
+          <span className="text-primary">
+            (Available: ₹{balance.toLocaleString('en-IN')}
+            {!wallet && <span className="text-muted-foreground font-normal"> · loading wallet</span>})
+          </span>
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>

@@ -1,4 +1,5 @@
 import { mockStocks } from '@/lib/mock-data';
+import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 
 export interface LiveStock {
   symbol: string;
@@ -39,6 +40,17 @@ function simulateLive(stocks: typeof mockStocks): LiveStock[] {
 }
 
 export async function fetchMarketData(market: string): Promise<LiveStock[]> {
+  if (backendApiEnabled()) {
+    try {
+      const res = await apiFetch<{ stocks: LiveStock[] }>(
+        `/api/market?market=${encodeURIComponent(market)}`
+      );
+      if (res.stocks?.length) return res.stocks;
+    } catch {
+      // fall through to client-side paths below
+    }
+  }
+
   const symbols = MARKET_SYMBOLS[market] || MARKET_SYMBOLS.US;
 
   // Try Yahoo Finance via a CORS proxy
