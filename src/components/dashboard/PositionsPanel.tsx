@@ -1,16 +1,24 @@
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowDownRight, Clock, Loader2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, Loader2, TrendingUp } from 'lucide-react';
 import { useOpenBets } from '@/hooks/useBetting';
+import { useRealtimePrices } from '@/hooks/useRealtimePrices';
 
 const PositionsPanel = () => {
   const { data: bets, isLoading } = useOpenBets();
+
+  const symbols = [...new Set((bets || []).map((b: any) => b.symbol as string))];
+  const { data: prices = {} } = useRealtimePrices(symbols);
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Open Positions</h3>
-        <span className="text-xs font-mono text-muted-foreground">{bets?.length || 0} active</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-primary font-mono animate-pulse">● LIVE</span>
+          <span className="text-xs font-mono text-muted-foreground">{bets?.length || 0} active</span>
+        </div>
       </div>
+
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
@@ -21,8 +29,18 @@ const PositionsPanel = () => {
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {bets.map((pos, i) => {
+          {(bets as any[]).map((pos, i) => {
             const stake = Number(pos.stake);
+            const entry = Number(pos.entry_price);
+            const current = prices[pos.symbol] ?? entry;
+            const isLong = pos.bet_type === 'long';
+
+            // P&L: long profits when price goes up, short profits when price goes down
+            const priceDiff = isLong ? current - entry : entry - current;
+            const pnlPct = entry > 0 ? (priceDiff / entry) * 100 : 0;
+            const pnlAmt = stake * (pnlPct / 100);
+            const isWinning = pnlAmt >= 0;
+
             return (
               <motion.div
                 key={pos.id}
@@ -34,23 +52,37 @@ const PositionsPanel = () => {
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
                     <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded ${
-                      pos.bet_type === 'long' ? 'bg-gain/10 text-gain' : 'bg-loss/10 text-loss'
+                      isLong ? 'bg-gain/10 text-gain' : 'bg-loss/10 text-loss'
                     }`}>
-                      {pos.bet_type === 'long' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                      {isLong ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                       {pos.bet_type.toUpperCase()}
                     </span>
                     <span className="text-sm font-semibold text-foreground">{pos.symbol}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {pos.expiry}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className={`w-3.5 h-3.5 ${isWinning ? 'text-gain' : 'text-loss'}`} />
+                    <span className={`text-sm font-mono font-bold ${isWinning ? 'text-gain' : 'text-loss'}`}>
+                      {pnlAmt >= 0 ? '+' : ''}₹{pnlAmt.toFixed(2)}
+                    </span>
+                    <span className={`text-xs font-mono ${isWinning ? 'text-gain' : 'text-loss'}`}>
+                      ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
+                    </span>
+                  </div>
                 </div>
+
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-mono">Stake: ${stake}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span className="font-mono">Entry: ${Number(pos.entry_price).toFixed(2)}</span>
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono">Stake: ₹{stake.toLocaleString('en-IN')}</span>
+                    <span className="font-mono">Entry: ₹{entry.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-semibold text-foreground">
+                      Now: ₹{current.toFixed(2)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> {pos.expiry}
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             );

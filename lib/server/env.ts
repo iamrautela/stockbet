@@ -19,3 +19,11 @@ export function getSupabaseServiceRoleKey(): string {
 export function getCronSecret(): string | undefined {
   return process.env.CRON_SECRET;
 }
+
+export function getRazorpayKeyId(): string {
+  return requireEnv('RAZORPAY_KEY_ID');
+}
+
+export function getRazorpayKeySecret(): string {
+  return requireEnv('RAZORPAY_KEY_SECRET');
+}
