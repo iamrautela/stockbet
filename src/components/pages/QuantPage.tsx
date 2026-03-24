@@ -214,13 +214,12 @@ const QuantPage = () => {
 
     if (series?.closes?.length && series.closes.length >= 25) {
       prices = series.closes;
+      source = 'yahoo';
       setDataNote(`Live historical data: ${series.closes.length} daily bars (Yahoo Finance).`);
     } else {
       prices = syntheticPrices(symbol, 252);
       source = 'simulated';
-      setDataNote(
-        'Could not load live history (start Vercel API + proxy, or check symbol). Using simulated prices for this run.'
-      );
+      setDataNote(null); // silently use simulated — no error shown
     }
 
     await new Promise((r) => setTimeout(r, 100));

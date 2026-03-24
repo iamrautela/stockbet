@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { apiFetch, backendApiEnabled } from '@/lib/backend-fetch';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -22,12 +21,11 @@ export const WithdrawModal = ({ open, onOpenChange, currentBalance, onSuccess }:
 
   const handleWithdraw = async () => {
     const numAmount = parseFloat(amount);
-    
+
     if (isNaN(numAmount) || numAmount < 100) {
       setError('Amount must be at least ₹100');
       return;
     }
-
     if (numAmount > currentBalance) {
       setError('Insufficient balance');
       return;
@@ -37,25 +35,34 @@ export const WithdrawModal = ({ open, onOpenChange, currentBalance, onSuccess }:
     setError('');
 
     try {
-      if (backendApiEnabled()) {
-        await apiFetch('/api/wallet', {
-          method: 'POST',
-          json: { action: 'withdraw', amount: numAmount },
-        });
-      } else {
-        const { error: rpcError } = await supabase.rpc('withdraw_funds', {
-          p_amount: numAmount,
-        });
-        if (rpcError) throw rpcError;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not logged in');
 
-      toast.success('Withdrawal request submitted');
+      const newBalance = currentBalance - numAmount;
+
+      const { error: updateErr } = await supabase
+        .from('wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
+
+      if (updateErr) throw updateErr;
+
+      await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
+        type: 'withdrawal',
+        amount: -numAmount,
+        status: 'completed',
+        description: 'Manual withdrawal',
+      });
+
+      toast.success(`₹${numAmount.toLocaleString('en-IN')} withdrawn`);
       setAmount('');
       onSuccess();
       onOpenChange(false);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to withdraw funds');
-      toast.error('Withdrawal failed');
+      const msg = err instanceof Error ? err.message : 'Failed to withdraw funds';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -66,13 +73,13 @@ export const WithdrawModal = ({ open, onOpenChange, currentBalance, onSuccess }:
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Withdraw Funds</DialogTitle>
-          <DialogDescription>Request a withdrawal from your wallet</DialogDescription>
+          <DialogDescription>Remove dummy money from your wallet</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="p-3 bg-muted rounded-lg">
             <p className="text-sm text-muted-foreground">Available Balance</p>
-            <p className="text-2xl font-bold">₹{currentBalance.toLocaleString()}</p>
+            <p className="text-2xl font-bold">₹{currentBalance.toLocaleString('en-IN')}</p>
           </div>
 
           <div className="space-y-2">
@@ -82,14 +89,11 @@ export const WithdrawModal = ({ open, onOpenChange, currentBalance, onSuccess }:
               type="number"
               placeholder="Enter amount"
               value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                setError('');
-              }}
+              onChange={(e) => { setAmount(e.target.value); setError(''); }}
               min={100}
               max={currentBalance}
             />
-            <p className="text-xs text-muted-foreground">Min: ₹100 | Max: ₹{currentBalance.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Min: ₹100 | Max: ₹{currentBalance.toLocaleString('en-IN')}</p>
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
