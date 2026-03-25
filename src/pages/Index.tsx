@@ -11,7 +11,6 @@ import IPOPage from '@/components/pages/IPOPage';
 import QuantPage from '@/components/pages/QuantPage';
 import PlaceholderPage from '@/components/pages/PlaceholderPage';
 import SettingsPage from '@/components/pages/SettingsPage';
-import AuthPage from '@/components/pages/AuthPage';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
@@ -28,7 +27,7 @@ const Index = () => {
   }
 
   if (!user) {
-    return <AuthPage />;
+    return <DashboardPage />;
   }
 
   const renderPage = () => {
